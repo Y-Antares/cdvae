@@ -64,13 +64,15 @@ conda activate cdvae
 pip install -e .
 ```
 
+> Suggestion: Use the `environment.yaml` file to create the environment by running `conda env create -f environment.yaml -n cdvae`. If any packages are not installed, you can manually install them afterward.
+
 ### Setting up environment variables
 
 Make a copy of the `.env.template` file and rename it to `.env`. Modify the following environment variables in `.env`.
 
 - `PROJECT_ROOT`: path to the folder that contains this repo
 - `HYDRA_JOBS`: path to a folder to store hydra outputs
-- `WABDB`: path to a folder to store wabdb outputs
+- `WANDB`: path to a folder to store wandb outputs
 
 ## Datasets
 
@@ -94,7 +96,7 @@ After training, model checkpoints can be found in `$HYDRA_JOBS/singlerun/YYYY-MM
 
 ### Training with a property predictor
 
-Users can also additionally train an MLP property predictor on the latent space, which is needed for the property optimization task:
+Users can also additionally train an **MLP property predictor** on the latent space, which is needed for the property optimization task:
 
 ```
 python cdvae/run.py data=perov expname=perov model.predict_property=True
@@ -112,8 +114,9 @@ python scripts/evaluate.py --model_path MODEL_PATH --tasks recon gen opt
 
 `MODEL_PATH` will be the path to the trained model. Users can choose one or several of the 3 tasks:
 
-- `recon`: reconstruction, reconstructs all materials in the test data. Outputs can be found in `eval_recon.pt`l
-- `gen`: generate new material structures by sampling from the latent space. Outputs can be found in `eval_gen.pt`.
+- `recon`: reconstruction, reconstructs all materials in the test data. Outputs can be found in `eval_recon.pt`.
+  - `gen`: generate new material structures by sampling from the latent space. Outputs can be found in `eval_gen.pt`																			
+
 - `opt`: generate new material strucutre by minimizing the trained property in the latent space (requires `model.predict_property=True`). Outputs can be found in `eval_opt.pt`.
 
 `eval_recon.pt`, `eval_gen.pt`, `eval_opt.pt` are pytorch pickles files containing multiple tensors that describes the structures of `M` materials batched together. Each material can have different number of atoms, and we assume there are in total `N` atoms. `num_evals` denote the number of Langevin dynamics we perform for each material.
@@ -123,6 +126,11 @@ python scripts/evaluate.py --model_path MODEL_PATH --tasks recon gen opt
 - `lengths`: the lengths of the lattice, shape `(num_evals, M, 3)`
 - `angles`: the angles of the lattice, shape `(num_evals, M, 3)`
 - `num_atoms`: the number of atoms in each material, shape `(num_evals, M)`
+
+> Note: 
+>
+> 1. Example: `python scripts/evaluate.py --model_path \cdvae\prop_models\perovskite --tasks recon gen opt`
+> 2. The YAML file located in the directory same as `checkpoint`  file determines the parameters for the `generate` process. Some parameters might be missing, and you can refer to `cdvae\prop_models\perovskite\hparams.yaml` to supplement them. The resolution of this missing parameter issue also depends on modifying the `load_model` function in `cdvae\scripts\eval_utils.py` (to ignore errors caused by `fc_num_layers`).
 
 ## Evaluating model
 
