@@ -115,7 +115,7 @@ python scripts/evaluate.py --model_path MODEL_PATH --tasks recon gen opt
 `MODEL_PATH` will be the path to the trained model. Users can choose one or several of the 3 tasks:
 
 - `recon`: reconstruction, reconstructs all materials in the test data. Outputs can be found in `eval_recon.pt`.
-  - `gen`: generate new material structures by sampling from the latent space. Outputs can be found in `eval_gen.pt`																			
+  - `gen`: generate new material structures by sampling from the latent space. Outputs can be found in `eval_gen.pt`			
 
 - `opt`: generate new material strucutre by minimizing the trained property in the latent space (requires `model.predict_property=True`). Outputs can be found in `eval_opt.pt`.
 

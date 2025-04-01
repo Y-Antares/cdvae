@@ -346,7 +346,21 @@ class TripletInteraction(torch.nn.Module):
         x_ac = self.up_projection_ac(x)  # (nEdges, emb_size_edge)
 
         # Merge interaction of c->a and a->c
-        x_ac = x_ac[id_swap]  # swap to add to edge a->c and not c->a
+        # x_ac = x_ac[id_swap]  # swap to add to edge a->c and not c->a
+        if id_swap.numel() > 0:  # 确保id_swap不为空
+            # 确保id_swap不超出x_ac的范围
+            valid_mask = id_swap < x_ac.shape[0]
+            if not valid_mask.all():
+                print(f"Warning: id_swap contains indices that exceed x_ac dimensions.")
+                print(f"x_ac shape: {x_ac.shape}, id_swap max: {id_swap.max().item() if id_swap.numel() > 0 else 'empty'}")
+                # 过滤掉无效索引
+                id_swap = id_swap[valid_mask]
+            
+            # 只有当有有效索引时才使用id_swap
+            if id_swap.numel() > 0:
+                x_ac = x_ac[id_swap]  # swap to add to edge a->c and not c->a
+            else:
+                print("Warning: No valid indices in id_swap after filtering")
         x3 = x_ca + x_ac
         x3 = x3 * self.inv_sqrt_2
         return x3

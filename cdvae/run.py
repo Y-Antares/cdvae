@@ -1,6 +1,8 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+os.environ['TORCH_USE_CUDA_DSA'] = "1"
 from pathlib import Path
 from typing import List
 import hydra

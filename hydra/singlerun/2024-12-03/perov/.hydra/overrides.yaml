@@ -1,0 +1,3 @@
+- data=perov
+- expname=perov
+- model.predict_property=True

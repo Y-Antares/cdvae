@@ -8,15 +8,15 @@ import smact
 import smact.data_loader
 from collections import Counter
 
-ptfile = 'cdvae/prop_models/perovskite/eval_recon_heat_ref.pt'
+ptfile = '/root/cdvae/hydra/singlerun/2025-03-15/Ag/eval_opt.pt'
 # Get the current directory
 current_directory = os.getcwd()
 print("Current default path:", current_directory)
 
 # Create the output directory for results
-output_directory = os.path.join(current_directory, 'results', 'filtered_heat_ref')
+output_directory = os.path.join(current_directory, 'results', 'ag_mag_opt')
 os.makedirs(output_directory, exist_ok=True)
-print(f"Results from: {ptfile} will be saved to: {output_directory}")
+print(f"Results will be saved to: {output_directory}")
 
 def patch_smact_file_open():
     """Fix the file opening method for smact, enforcing UTF-8 encoding."""
@@ -28,29 +28,10 @@ def patch_smact_file_open():
 
 # Define allowed element combinations
 ALLOWED_ELEMENTS = {
-    'A': ['Bi', 'Pb','Ca'],  # Allowed elements for A site
-    'B': ['Fe', 'Ti'],  # Allowed elements for B site
-    'X': ['O']          # Allowed elements for X site
+    'A': ['Ag'],  # Allowed elements for A site
+    'B': ['I', 'S','Se','Te']  # Allowed elements for B site
+    # 'X': ['O']          # Allowed elements for X site
 }
-
-def is_valid_composition(crystal):
-    """Check if the structure contains the required element combinations."""
-    elem_counter = Counter(crystal.atom_types)
-    
-    # Print the current composition for debugging
-    print(f"Current composition: {dict(elem_counter)}")
-    
-    # Check if elements are within the allowed range
-    for elem in elem_counter.keys():
-        if not any(elem in allowed_list for allowed_list in ALLOWED_ELEMENTS.values()):
-            return False
-    
-    # Check if it contains at least one A-site element, one B-site element, and oxygen
-    has_A = any(elem in ALLOWED_ELEMENTS['A'] for elem in elem_counter.keys())
-    has_B = any(elem in ALLOWED_ELEMENTS['B'] for elem in elem_counter.keys())
-    has_X = any(elem in ALLOWED_ELEMENTS['X'] for elem in elem_counter.keys())
-    
-    return has_A and has_B and has_X
 
 # Apply the patch
 patch_smact_file_open()
@@ -96,10 +77,9 @@ for idx, crys_array in enumerate(crys_array_list):
             print(f"Structure {idx} construction failed: {crystal.invalid_reason}")
             continue
         
-        # Check if the composition is valid
-        if not is_valid_composition(crystal):
-            print(f"Structure {idx} composition not valid")
-            continue
+        # Print the current composition for debugging
+        elem_counter = Counter(crystal.atom_types)
+        print(f"Current composition: {dict(elem_counter)}")
         
         # Convert to POSCAR format
         poscar = Poscar(crystal.structure)

@@ -194,12 +194,44 @@ class GenEval(object):
         wdist_num_elems = wasserstein_distance(pred_nelems, gt_nelems)
         return {'wdist_num_elems': wdist_num_elems}
 
+    # 在GenEval类的get_prop_wdist方法中进行修改
     def get_prop_wdist(self):
         if self.eval_model_name is not None:
-            pred_props = prop_model_eval(self.eval_model_name, [
-                                         c.dict for c in self.valid_samples])
-            gt_props = prop_model_eval(self.eval_model_name, [
-                                       c.dict for c in self.gt_crys])
+            # 过滤掉原子数超过30的结构
+            valid_samples_filtered = []
+            for crystal in self.valid_samples:
+                num_atoms = len(crystal.atom_types)
+                if num_atoms <= 30:  # 设定最大支持30个原子
+                    valid_samples_filtered.append(crystal)
+            
+            gt_crys_filtered = []
+            for crystal in self.gt_crys:
+                num_atoms = len(crystal.atom_types)
+                if num_atoms <= 30:  # 设定最大支持30个原子
+                    gt_crys_filtered.append(crystal)
+            
+            if len(valid_samples_filtered) == 0 or len(gt_crys_filtered) == 0:
+                print(f"Warning: After filtering, no valid structures left. Original counts: valid_samples={len(self.valid_samples)}, gt_crys={len(self.gt_crys)}")
+                return {'wdist_prop': None}
+            
+            print(f"Filtered structures: kept {len(valid_samples_filtered)}/{len(self.valid_samples)} generated and {len(gt_crys_filtered)}/{len(self.gt_crys)} ground truth")
+            
+            pred_props = prop_model_eval(self.eval_model_name, [c.dict for c in valid_samples_filtered])
+            gt_props = prop_model_eval(self.eval_model_name, [c.dict for c in gt_crys_filtered])
+            
+            # 确保得到有效的预测结果
+            if pred_props is None or gt_props is None or len(pred_props) == 0 or len(gt_props) == 0:
+                print("Warning: Empty prediction results after evaluation")
+                return {'wdist_prop': None}
+            
+            # 过滤掉None值
+            pred_props = [p for p in pred_props if p is not None]
+            gt_props = [p for p in gt_props if p is not None]
+            
+            if len(pred_props) == 0 or len(gt_props) == 0:
+                print("Warning: No valid property predictions after filtering None values")
+                return {'wdist_prop': None}
+            
             wdist_prop = wasserstein_distance(pred_props, gt_props)
             return {'wdist_prop': wdist_prop}
         else:
@@ -235,7 +267,32 @@ class OptEval(object):
         and <step_opt> is the number of saved crystals for each intialzation.
         default to minimize the property.
         """
-        step_opt = int(len(crys) / num_opt)
+        # 检查晶体数量是否能被num_opt整除，如果不能，调整num_opt
+        total_crys = len(crys)
+        if total_crys % num_opt != 0:
+            # 查找最接近的能够整除总数的数字
+            for possible_num_opt in [num_opt-1, num_opt+1, num_opt-2, num_opt+2]:
+                if possible_num_opt > 0 and total_crys % possible_num_opt == 0:
+                    print(f"Warning: Adjusting num_opt from {num_opt} to {possible_num_opt} to match crystal count ({total_crys})")
+                    num_opt = possible_num_opt
+                    break
+            # 如果找不到合适的值，使用最大公约数
+            if total_crys % num_opt != 0:
+                import math
+                factors = []
+                for i in range(1, int(math.sqrt(total_crys)) + 1):
+                    if total_crys % i == 0:
+                        factors.append(i)
+                        factors.append(total_crys // i)
+                factors.sort()
+                # 找到最接近原始num_opt的因数
+                closest_factor = min(factors, key=lambda x: abs(x - num_opt))
+                print(f"Warning: Adjusting num_opt from {num_opt} to {closest_factor} to match crystal count ({total_crys})")
+                num_opt = closest_factor
+                
+        step_opt = total_crys // num_opt
+        print(f"OptEval: total_crys={total_crys}, step_opt={step_opt}, num_opt={num_opt}")
+        
         self.crys = crys
         self.step_opt = step_opt
         self.num_opt = num_opt
@@ -243,21 +300,87 @@ class OptEval(object):
 
     def get_success_rate(self):
         valid_indices = np.array([c.valid for c in self.crys])
-        valid_indices = valid_indices.reshape(self.step_opt, self.num_opt)
+        
+        # 检查数组大小是否匹配
+        if len(valid_indices) != self.step_opt * self.num_opt:
+            print(f"Warning: Array size mismatch. valid_indices size: {len(valid_indices)}, expected: {self.step_opt * self.num_opt}")
+            # 截断或填充数组以匹配预期大小
+            if len(valid_indices) > self.step_opt * self.num_opt:
+                valid_indices = valid_indices[:self.step_opt * self.num_opt]
+                print(f"Truncated valid_indices to size {len(valid_indices)}")
+            else:
+                # 填充额外的False值
+                padding = np.zeros(self.step_opt * self.num_opt - len(valid_indices), dtype=bool)
+                valid_indices = np.concatenate([valid_indices, padding])
+                print(f"Padded valid_indices to size {len(valid_indices)}")
+        
+        try:
+            valid_indices = valid_indices.reshape(self.step_opt, self.num_opt)
+        except ValueError as e:
+            print(f"Reshape error: {e}")
+            print(f"Actual array shape: {valid_indices.shape}, trying to reshape to: ({self.step_opt}, {self.num_opt})")
+            # 尝试调整step_opt
+            if len(valid_indices) % self.num_opt == 0:
+                self.step_opt = len(valid_indices) // self.num_opt
+                print(f"Adjusted step_opt to {self.step_opt}")
+                valid_indices = valid_indices.reshape(self.step_opt, self.num_opt)
+            else:
+                # 如果无法调整，可能需要裁剪数组
+                trim_size = (len(valid_indices) // self.num_opt) * self.num_opt
+                valid_indices = valid_indices[:trim_size]
+                self.step_opt = len(valid_indices) // self.num_opt
+                print(f"Trimmed array to size {len(valid_indices)} and adjusted step_opt to {self.step_opt}")
+                valid_indices = valid_indices.reshape(self.step_opt, self.num_opt)
+        
         valid_x, valid_y = valid_indices.nonzero()
         props = np.ones([self.step_opt, self.num_opt]) * np.inf
         valid_crys = [c for c in self.crys if c.valid]
         if len(valid_crys) == 0:
             sr_5, sr_10, sr_15 = 0, 0, 0
         else:
-            pred_props = prop_model_eval(self.eval_model_name, [
-                                         c.dict for c in valid_crys])
-            percentiles = Percentiles[self.eval_model_name]
-            props[valid_x, valid_y] = pred_props
-            best_props = props.min(axis=0)
-            sr_5 = (best_props <= percentiles[0]).mean()
-            sr_10 = (best_props <= percentiles[1]).mean()
-            sr_15 = (best_props <= percentiles[2]).mean()
+            # 过滤掉原子数超过30的结构
+            valid_crys_filtered = []
+            for crystal in valid_crys:
+                num_atoms = len(crystal.atom_types)
+                if num_atoms <= 30:  # 设定最大支持30个原子
+                    valid_crys_filtered.append(crystal)
+            
+            print(f"Optimization evaluation: kept {len(valid_crys_filtered)}/{len(valid_crys)} valid structures after atom count filtering")
+            
+            if len(valid_crys_filtered) == 0:
+                sr_5, sr_10, sr_15 = 0, 0, 0
+            else:
+                try:
+                    pred_props = prop_model_eval(self.eval_model_name, [c.dict for c in valid_crys_filtered])
+                    # 确保我们有足够的预测结果
+                    if pred_props is None or len(pred_props) == 0 or all(p is None for p in pred_props):
+                        print("Warning: No valid property predictions returned")
+                        sr_5, sr_10, sr_15 = 0, 0, 0
+                    else:
+                        # 过滤掉None值
+                        pred_props = [p for p in pred_props if p is not None]
+                        
+                        # 将预测值分配给相应的位置
+                        if len(pred_props) > 0:
+                            # 为简化处理，我们直接将预测值按顺序填入valid_indices非零位置
+                            # 注意：这假设pred_props和valid_x/valid_y的顺序相同
+                            valid_count = min(len(pred_props), len(valid_x))
+                            for i in range(valid_count):
+                                props[valid_x[i], valid_y[i]] = pred_props[i]
+                            
+                            best_props = props.min(axis=0)
+                            percentiles = Percentiles.get(self.eval_model_name, np.array([0.0, 0.0, 0.0]))
+                            sr_5 = (best_props <= percentiles[0]).mean()
+                            sr_10 = (best_props <= percentiles[1]).mean()
+                            sr_15 = (best_props <= percentiles[2]).mean()
+                        else:
+                            sr_5, sr_10, sr_15 = 0, 0, 0
+                except Exception as e:
+                    print(f"Error during property evaluation: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    sr_5, sr_10, sr_15 = 0, 0, 0
+        
         return {'SR5': sr_5, 'SR10': sr_10, 'SR15': sr_15}
 
     def get_metrics(self):

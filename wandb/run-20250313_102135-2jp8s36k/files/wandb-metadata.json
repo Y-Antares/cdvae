@@ -1,0 +1,36 @@
+{
+  "os":  "Windows-10-10.0.22631-SP0",
+  "python":  "3.8.19",
+  "startedAt":  "2025-03-13T02:21:35.194301Z",
+  "args":  [
+    "data=matdiff",
+    "expname=Ag"
+  ],
+  "program":  "cdvae/run.py",
+  "codePath":  "cdvae\\run.py",
+  "git":  {
+    "remote":  "git@github.com:Y-Antares/cdvae.git",
+    "commit":  "f857f598d6f6cca5dc1ea0582d228f12dcc2c2ea"
+  },
+  "email":  "2570984488@qq.com",
+  "root":  ".",
+  "host":  "LAPTOP-9BE1GJPD",
+  "username":  "lenovo",
+  "executable":  "E:\\Anaconda\\envs\\cdvae\\python.exe",
+  "codePathLocal":  "cdvae\\run.py",
+  "cpu_count":  14,
+  "cpu_count_logical":  20,
+  "disk":  {
+    "/":  {
+      "total":  "214748360704",
+      "used":  "86006321152"
+    }
+  },
+  "memory":  {
+    "total":  "42444062720"
+  },
+  "cpu":  {
+    "count":  14,
+    "countLogical":  20
+  }
+}

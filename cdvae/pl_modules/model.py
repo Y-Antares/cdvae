@@ -40,7 +40,7 @@ class BaseModule(pl.LightningModule):
         scheduler = hydra.utils.instantiate(
             self.hparams.optim.lr_scheduler, optimizer=opt
         )
-        return {"optimizer": opt, "lr_scheduler": scheduler, "monitor": "val_loss"}
+        return {"optimizer": opt, "lr_scheduler": scheduler, "monitor": "train_loss_epoch"}
 
 
 class CrystGNN_Supervise(BaseModule):
@@ -211,7 +211,7 @@ class CDVAE(BaseModule):
             lengths_and_angles, lengths, angles = (
                 self.predict_lattice(z, gt_num_atoms))
             composition_per_atom = self.predict_composition(z, gt_num_atoms)
-            if self.hparams.teacher_forcing_lattice and teacher_forcing:
+            if hasattr(self.hparams, 'teacher_forcing_lattice') and self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
                 angles = gt_angles
         else:
@@ -507,12 +507,24 @@ class CDVAE(BaseModule):
         loss_per_atom = 0.5 * loss_per_atom * used_sigmas_per_atom**2
         return scatter(loss_per_atom, batch.batch, reduce='mean').mean()
 
-    def type_loss(self, pred_atom_types, target_atom_types,
-                  used_type_sigmas_per_atom, batch):
+    def type_loss(self, pred_atom_types, target_atom_types, used_type_sigmas_per_atom, batch):
+        # 确保目标原子类型在有效范围内
+        n_classes = pred_atom_types.size(1)
+        
+        # 原子类型减1转换为索引
         target_atom_types = target_atom_types - 1
-        loss = F.cross_entropy(
-            pred_atom_types, target_atom_types, reduction='none')
-        # rescale loss according to noise
+        
+        # 检查并裁剪无效索引
+        invalid_mask = (target_atom_types < 0) | (target_atom_types >= n_classes)
+        if invalid_mask.any():
+            print(f"Warning: Found {invalid_mask.sum().item()} invalid atom types out of {target_atom_types.size(0)}.")
+            print(f"Min: {target_atom_types.min().item()}, Max: {target_atom_types.max().item()}, Classes: {n_classes}")
+            target_atom_types = torch.clamp(target_atom_types, 0, n_classes - 1)
+        
+        # 计算损失
+        loss = F.cross_entropy(pred_atom_types, target_atom_types, reduction='none')
+        
+        # 按噪声水平重新缩放损失
         loss = loss / used_type_sigmas_per_atom
         return scatter(loss, batch.batch, reduce='mean').mean()
 

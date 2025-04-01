@@ -1,0 +1,473 @@
+_wandb:
+    value:
+        cli_version: 0.18.7
+        m:
+            - "1": trainer/global_step
+              "6":
+                - 3
+              "7": []
+            - "1": train_natom_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_kld_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_lengths_mard
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_coord_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": lr-Adam
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_natom_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_coord_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_lattice_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_type_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_coord_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_composition_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_type_accuracy
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_type_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_composition_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_lattice_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_property_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_volumes_mard
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_type_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_lengths_mard
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_angles_mae
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_coord_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_composition_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_volumes_mard
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_kld_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_type_loss_step
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_kld_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_natom_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_property_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_angles_mae
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_natom_accuracy
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_kld_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_composition_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train_lattice_loss_epoch
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": val_type_accuracy
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_natom_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_lattice_loss
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": test_natom_accuracy
+              "5": 1
+              "6":
+                - 1
+                - 3
+              "7": []
+        python_version: 3.8.19
+        t:
+            "1":
+                - 1
+                - 5
+                - 9
+                - 50
+                - 53
+                - 55
+                - 77
+                - 103
+            "2":
+                - 1
+                - 5
+                - 9
+                - 50
+                - 53
+                - 55
+                - 77
+                - 103
+            "3":
+                - 1
+                - 2
+                - 7
+                - 13
+                - 15
+                - 23
+                - 55
+                - 62
+                - 66
+            "4": 3.8.19
+            "5": 0.18.7
+            "8":
+                - 3
+                - 8
+            "12": 0.18.7
+            "13": windows-amd64
+core:
+    value:
+        tags:
+            - "2025-03-13"
+        version: 0.0.1
+data:
+    value:
+        datamodule:
+            _target_: cdvae.pl_data.datamodule.CrystDataModule
+            batch_size:
+                test: 256
+                train: 512
+                val: 256
+            datasets:
+                test:
+                    - _target_: cdvae.pl_data.dataset.CrystDataset
+                      graph_method: crystalnn
+                      lattice_scale_method: scale_length
+                      name: Formation energy test
+                      niggli: true
+                      path: D:/github/cdvae/cdvae/data/matdiff/test.csv
+                      preprocess_workers: 30
+                      primitive: false
+                      prop: total_magnetization
+                train:
+                    _target_: cdvae.pl_data.dataset.CrystDataset
+                    graph_method: crystalnn
+                    lattice_scale_method: scale_length
+                    name: Formation energy train
+                    niggli: true
+                    path: D:/github/cdvae/cdvae/data/matdiff/train.csv
+                    preprocess_workers: 30
+                    primitive: false
+                    prop: total_magnetization
+                val:
+                    - _target_: cdvae.pl_data.dataset.CrystDataset
+                      graph_method: crystalnn
+                      lattice_scale_method: scale_length
+                      name: Formation energy val
+                      niggli: true
+                      path: D:/github/cdvae/cdvae/data/matdiff/val.csv
+                      preprocess_workers: 30
+                      primitive: false
+                      prop: total_magnetization
+            num_workers:
+                test: 8
+                train: 8
+                val: 8
+        early_stopping_patience: 30
+        eval_model_name: perovskite
+        graph_method: crystalnn
+        lattice_scale_method: scale_length
+        max_atoms: 60
+        niggli: true
+        num_targets: 1
+        otf_graph: false
+        preprocess_workers: 30
+        primitive: false
+        prop: total_magnetization
+        readout: mean
+        root_path: D:/github/cdvae/cdvae/data/matdiff
+        teacher_forcing_max_epoch: 250
+        train_max_epochs: 500
+expname:
+    value: Ag
+logging:
+    value:
+        lr_monitor:
+            log_momentum: false
+            logging_interval: step
+        progress_bar_refresh_rate: 20
+        val_check_interval: 5
+        wandb:
+            entity: null
+            group: Ag
+            log_model: true
+            mode: online
+            name: Ag
+            project: crystal_generation_mit
+        wandb_watch:
+            log: all
+            log_freq: 500
+model:
+    value:
+        _target_: cdvae.pl_modules.model.CDVAE
+        beta: 0.01
+        cost_composition: 1
+        cost_coord: 10
+        cost_edge: 10
+        cost_lattice: 10
+        cost_natom: 1
+        cost_property: 1
+        cost_type: 1
+        decoder:
+            _target_: cdvae.pl_modules.decoder.GemNetTDecoder
+            hidden_dim: 128
+            latent_dim: 256
+            max_neighbors: 20
+            radius: 7
+            scale_file: D:/github/cdvae/cdvae/cdvae/pl_modules/gemnet/gemnet-dT.json
+        encoder:
+            _target_: cdvae.pl_modules.gnn.DimeNetPlusPlusWrap
+            basis_emb_size: 8
+            cutoff: 7
+            envelope_exponent: 5
+            hidden_channels: 128
+            int_emb_size: 64
+            max_num_neighbors: 20
+            num_after_skip: 2
+            num_before_skip: 1
+            num_blocks: 4
+            num_output_layers: 3
+            num_radial: 6
+            num_spherical: 7
+            num_targets: 1
+            otf_graph: false
+            out_emb_channels: 256
+            readout: mean
+        fc_num_layers: 1
+        hidden_dim: 256
+        latent_dim: 256
+        max_atoms: 60
+        max_neighbors: 20
+        num_noise_level: 50
+        predict_property: false
+        radius: 7
+        sigma_begin: 10
+        sigma_end: 0.01
+        teacher_forcing_lattice: true
+        teacher_forcing_max_epoch: 250
+        type_sigma_begin: 5
+        type_sigma_end: 0.01
+optim:
+    value:
+        lr_scheduler:
+            _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+            factor: 0.6
+            min_lr: 0.0001
+            patience: 30
+        optimizer:
+            _target_: torch.optim.Adam
+            betas:
+                - 0.9
+                - 0.999
+            eps: 1e-08
+            lr: 0.001
+            weight_decay: 0
+        use_lr_scheduler: true
+stats/params_not_trainable:
+    value: 117
+stats/params_total:
+    value: 4930694
+stats/params_trainable:
+    value: 4930577
+train:
+    value:
+        deterministic: false
+        early_stopping:
+            patience: 30
+            verbose: false
+        model_checkpoints:
+            save_top_k: 1
+            verbose: false
+        monitor_metric: train_loss_epoch
+        monitor_metric_mode: min
+        pl_trainer:
+            accumulate_grad_batches: 1
+            fast_dev_run: false
+            gpus: 1
+            gradient_clip_algorithm: value
+            gradient_clip_val: 0.5
+            max_epochs: 500
+            num_sanity_val_steps: 2
+            precision: 32
+            profiler: simple
+        random_seed: 42

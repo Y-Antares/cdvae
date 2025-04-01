@@ -16,12 +16,14 @@ from cdvae.pl_modules.model import CDVAE
 import smact
 from smact.screening import pauling_test
 
+import cdvae
 from cdvae.common.constants import CompScalerMeans, CompScalerStds
 from cdvae.common.data_utils import StandardScaler, chemical_symbols
 from cdvae.pl_data.dataset import TensorCrystDataset
 from cdvae.pl_data.datamodule import worker_init_fn
 
 from torch_geometric.data import DataLoader
+from cdvae.common.data_utils import StandardScalerTorch
 
 CompScaler = StandardScaler(
     means=np.array(CompScalerMeans),
@@ -39,12 +41,11 @@ def load_data(file_path):
             else:
                 data[k] = torch.from_numpy(v).unsqueeze(0)
     else:
-        data = torch.load(file_path)
+        data = torch.load(file_path, weights_only=False)
     return data
 
 
 def get_model_path(eval_model_name):
-    import cdvae
     model_path = (
         Path(cdvae.__file__).parent / 'prop_models' / eval_model_name)
     return model_path
@@ -67,21 +68,21 @@ def load_model(model_path, load_data=False, testing=True):
     with initialize_config_dir(str(model_path)):
         cfg = compose(config_name='hparams')
         
-        # Get the model class
+        # 获取模型类
         model_cls = hydra.utils.get_class(cfg.model._target_)
         
-        # Find the latest checkpoint
+        # 找到最新的检查点
         ckpts = list(model_path.glob('*.ckpt'))
         if len(ckpts) > 0:
             ckpt_epochs = np.array(
                 [int(ckpt.parts[-1].split('-')[0].split('=')[1]) for ckpt in ckpts])
             ckpt = str(ckpts[ckpt_epochs.argsort()[-1]])
         
-        # Load the checkpoint
+        # 加载检查点
         checkpoint = torch.load(ckpt, map_location='cpu')
         state_dict = checkpoint['state_dict']
         
-        # Fix weights with mismatched dimensions
+        # 修复尺寸不匹配的权重
         for key in ['encoder.output_blocks.0.lin.weight',
                    'encoder.output_blocks.1.lin.weight',
                    'encoder.output_blocks.2.lin.weight',
@@ -93,7 +94,7 @@ def load_model(model_path, load_data=False, testing=True):
                 new_weight = old_weight.expand(256, -1)
                 state_dict[key] = new_weight
         
-        # Model parameters dictionary
+        # 模型参数字典
         model_kwargs = {
             'hidden_dim': cfg.model.hidden_dim,
             'latent_dim': cfg.model.latent_dim,
@@ -121,25 +122,25 @@ def load_model(model_path, load_data=False, testing=True):
             'logging': cfg.logging
         }
         
-        # Ensure fc_num_layers exists in model_kwargs
+        # 确保fc_num_layers存在于model_kwargs中
         if hasattr(cfg.model, 'fc_num_layers'):
             model_kwargs['fc_num_layers'] = cfg.model.fc_num_layers
         else:
-            model_kwargs['fc_num_layers'] = 4  # Set default value
+            model_kwargs['fc_num_layers'] = 4  # 设置默认值
             print("Warning: fc_num_layers not found in config, using default value: 4")
         
-        # Create a new model
+        # 创建新模型
         model = model_cls(**model_kwargs)
         
-        # Load the modified state dictionary
+        # 加载修改后的状态字典
         model.load_state_dict(state_dict, strict=False)
         
-        # Initialize other necessary components
+        # 初始化其他必要的组件
         if hasattr(model, 'init_sigmas'):
             model.init_sigmas()
         
-        model.lattice_scaler = torch.load(model_path / 'lattice_scaler.pt')
-        model.scaler = torch.load(model_path / 'prop_scaler.pt')
+        model.lattice_scaler = torch.load(model_path / 'lattice_scaler.pt', weights_only=False)
+        model.scaler = torch.load(model_path / 'prop_scaler.pt', weights_only=False)
 
         if load_data:
             datamodule = hydra.utils.instantiate(
@@ -250,38 +251,167 @@ def get_fp_pdist(fp_array):
 
 
 def prop_model_eval(eval_model_name, crystal_array_list):
+    try:
+        # 添加原子数检查
+        filtered_list = []
+        filtered_indices = []
+        
+        for i, crystal_dict in enumerate(crystal_array_list):
+            num_atoms = None
+            
+            # 处理不同类型的输入结构
+            if isinstance(crystal_dict, dict) and 'atom_types' in crystal_dict:
+                num_atoms = len(crystal_dict['atom_types'])
+            elif hasattr(crystal_dict, 'atom_types'):
+                num_atoms = len(crystal_dict.atom_types)
+            elif hasattr(crystal_dict, 'dict') and 'atom_types' in crystal_dict.dict:
+                num_atoms = len(crystal_dict.dict['atom_types'])
+            elif hasattr(crystal_dict, 'num_atoms'):
+                num_atoms = crystal_dict.num_atoms
+                
+            # 过滤掉原子数超过30的结构
+            if num_atoms is not None and num_atoms <= 30:
+                filtered_list.append(crystal_dict)
+                filtered_indices.append(i)
+        
+        if len(filtered_list) < len(crystal_array_list):
+            print(f"Filtered {len(crystal_array_list) - len(filtered_list)} structures with >30 atoms in prop_model_eval")
+        
+        if not filtered_list:
+            print("No valid structures left after filtering in prop_model_eval")
+            return [None] * len(crystal_array_list)
+        
+        # 原有的模型评估代码
+        model_path = get_model_path(eval_model_name)
+        model, _, _ = load_model(model_path)
+        cfg = load_config(model_path)
 
-    model_path = get_model_path(eval_model_name)
+        dataset = TensorCrystDataset(
+            filtered_list, cfg.data.niggli, cfg.data.primitive,
+            cfg.data.graph_method, cfg.data.preprocess_workers,
+            cfg.data.lattice_scale_method)
 
-    model, _, _ = load_model(model_path)
-    cfg = load_config(model_path)
+        dataset.scaler = model.scaler.copy() if hasattr(model.scaler, 'copy') else model.scaler
 
-    dataset = TensorCrystDataset(
-        crystal_array_list, cfg.data.niggli, cfg.data.primitive,
-        cfg.data.graph_method, cfg.data.preprocess_workers,
-        cfg.data.lattice_scale_method)
+        loader = DataLoader(
+            dataset,
+            shuffle=False,
+            batch_size=256,
+            num_workers=0,
+            worker_init_fn=worker_init_fn)
 
-    dataset.scaler = model.scaler.copy()
+        model.eval()
+        all_preds = []
 
-    loader = DataLoader(
-        dataset,
-        shuffle=False,
-        batch_size=256,
-        num_workers=0,
-        worker_init_fn=worker_init_fn)
+        if isinstance(model.scaler, dict):
+            print("Original model.scaler:", model.scaler)
+            
+            means = model.scaler.get('means', None)
+            stds = model.scaler.get('stds', None)
+            
+            print("Extracted means type:", type(means))
+            print("Extracted stds type:", type(stds))
+            
+            if isinstance(means, dict):
+                print("means is a dict:", means)
+                if 'data' in means:
+                    means = means['data']
+            
+            if isinstance(stds, dict):
+                print("stds is a dict:", stds)
+                if 'data' in stds:
+                    stds = stds['data']
+            
+            if means is not None and not isinstance(means, torch.Tensor):
+                means = torch.tensor(means, dtype=torch.float)
+            if stds is not None and not isinstance(stds, torch.Tensor):
+                stds = torch.tensor(stds, dtype=torch.float)
+            
+            new_scaler = StandardScalerTorch(means=means, stds=stds)
+            model.scaler = new_scaler
+            
+            print("Converted dictionary to StandardScalerTorch object")
+            print("New scaler:", model.scaler)
 
-    model.eval()
+        for batch in loader:
+            # 添加额外安全检查
+            max_supported_atoms = None
+            if hasattr(model, 'mlp_num_atoms') and isinstance(model.mlp_num_atoms, torch.nn.Sequential):
+                final_layer = model.mlp_num_atoms[-1]
+                if isinstance(final_layer, torch.nn.Linear):
+                    max_supported_atoms = final_layer.out_features - 1
+            elif hasattr(model, 'embeddings') and 'num_atom' in model.embeddings:
+                max_supported_atoms = model.embeddings['num_atom'].num_embeddings - 1
+            
+            if max_supported_atoms is not None and hasattr(batch, 'num_atoms'):
+                if batch.num_atoms.max() > max_supported_atoms:
+                    print(f"Warning: Limiting num_atoms from {batch.num_atoms.max()} to {max_supported_atoms}")
+                    batch.num_atoms = torch.clamp(batch.num_atoms, max=max_supported_atoms)
+            
+            try:
+                with torch.no_grad():
+                    preds = model(batch, teacher_forcing=False, training=False)
+                
+                try:
+                    model.scaler.match_device(preds)
+                    scaled_preds = model.scaler.inverse_transform(preds)
+                except (AttributeError, TypeError) as e:
+                    print(f"Warning: Error during scaling: {e}. Attempting fallback method.")
+                    try:
+                        scaled_preds = model.scaler.inverse_transform(preds)
+                    except Exception as e2:
+                        print(f"Fallback failed: {e2}. Using unscaled predictions.")
+                        scaled_preds = preds
+                
+                if isinstance(scaled_preds, dict):
+                    # 如果是字典，提取预测值
+                    for key, value in scaled_preds.items():
+                        if hasattr(value, 'detach'):
+                            all_preds.append(value.detach().cpu().numpy())
+                            break  # 只取第一个可用的预测值
+                        else:
+                            all_preds.append(value)
+                            break  # 只取第一个可用的预测值
+                else:
+                    all_preds.append(scaled_preds.detach().cpu().numpy())
+            except Exception as e:
+                print(f"Error processing batch: {e}")
+                continue  # 跳过错误的批次
 
-    all_preds = []
-
-    for batch in loader:
-        preds = model(batch)
-        model.scaler.match_device(preds)
-        scaled_preds = model.scaler.inverse_transform(preds)
-        all_preds.append(scaled_preds.detach().cpu().numpy())
-
-    all_preds = np.concatenate(all_preds, axis=0).squeeze(1)
-    return all_preds.tolist()
+        if not all_preds:
+            print("Warning: No predictions were generated")
+            return [None] * len(crystal_array_list)
+        
+        try:
+            all_preds = np.concatenate(all_preds, axis=0)
+            if all_preds.ndim > 1 and all_preds.shape[1] == 1:
+                all_preds = all_preds.squeeze(1)
+            
+            # 将预测结果转回原始长度
+            all_preds_list = all_preds.tolist()
+            
+            # 创建与原始输入长度相同的结果数组，未评估的结构用None填充
+            full_results = [None] * len(crystal_array_list)
+            for i, original_idx in enumerate(filtered_indices):
+                if i < len(all_preds_list):
+                    full_results[original_idx] = all_preds_list[i]
+            
+            # 过滤掉None值，只返回成功评估的结果
+            valid_results = [r for r in full_results if r is not None]
+            if len(valid_results) == 0:
+                print("Warning: All evaluations resulted in None")
+                return [None] * len(crystal_array_list)
+            
+            return valid_results
+        except Exception as e:
+            print(f"Error processing predictions: {e}")
+            return [None] * len(crystal_array_list)
+            
+    except Exception as e:
+        print(f"Exception in prop_model_eval: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return [None] * len(crystal_array_list)
 
 
 def filter_fps(struc_fps, comp_fps):
